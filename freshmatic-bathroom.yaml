@@ -101,7 +101,7 @@ sensor:
       - if:
           condition:
             for:
-              time: 5s # Waits for this time before resetting 'Dark Mode'. Default 20min
+              time: 20min # Waits for this time before resetting 'Dark Mode'. Default 20min
               condition:
                 and:
                   - switch.is_on: enable
