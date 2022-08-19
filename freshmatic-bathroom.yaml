@@ -1,0 +1,196 @@
+substitutions:
+  room: bathroom # Room Name. Lowercase only, Used for Device Name and Entities
+  bright_level: "50"
+  dark_level: "20"
+
+  dark_mode_sprays: "2" # Number of times to spray in Bathroom Mode
+
+  # Set the Interval Timings here (Minutes)
+  interval1: "5"
+  interval2: "15"
+  interval3: "30"
+  interval4: "60"
+
+globals:
+  - id: sprays
+    type: float
+    restore_value: yes
+
+esphome:
+  name: freshmatic-$room
+  platform: ESP8266
+  board: d1_mini
+  esp8266_restore_from_flash: true
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+logger:
+  logs:
+    adc: none
+    sensor: none
+    light: none
+    select: none
+api:
+ota:
+web_server:
+  port: 80
+
+binary_sensor:
+  - platform: gpio
+    id: reset
+    pin: D4
+    filters:
+      - invert:
+    on_click:
+      min_length: 500ms
+      max_length: 5000ms
+      then:
+        - light.turn_on:
+            id: led
+            effect: flashfast
+        - lambda: |-
+            id(sprays) = 0;
+
+select:
+  - platform: template
+    id: set_interval
+    name: $room Interval
+    icon: mdi:timer-outline
+    optimistic: true
+    restore_value: true
+    options:
+      - 0 (Bathroom Mode)
+      - $interval1 Minutes
+      - $interval2 Minutes
+      - $interval3 Minutes
+      - $interval4 Minutes
+    on_value:
+      - if:
+          condition:
+            - switch.is_on: enable
+            - lambda: "return atoi(x.c_str()) >= 1;"
+          then:
+            - switch.turn_on: spray
+
+sensor:
+  - platform: template
+    id: can_level
+    name: "Freshmatic $room Can"
+    device_class: pressure
+    unit_of_measurement: "Can"
+    update_interval: 2s
+    lambda: |-
+      return ( (2500-id(sprays) )/2500 ) * 100;
+
+  - platform: adc
+    id: brightness
+    name: Freshmatic $room Lux
+    device_class: illuminance
+    unit_of_measurement: lx
+    pin: A0
+    update_interval: 1s
+    filters:
+      - lambda: return 85-(x * 150);
+      - sliding_window_moving_average:
+          window_size: 3
+          send_every: 3
+
+    on_value:
+      - if:
+          condition:
+            for:
+              time: 5s # Waits for this time before resetting 'Dark Mode'. Default 20min
+              condition:
+                and:
+                  - switch.is_on: enable
+                  - lambda: "return atoi(id(set_interval).state.c_str()) == 0;"
+                  - lambda: "return id(brightness).state < $dark_level;"
+                  - switch.is_off: its_dark
+          then:
+            - switch.turn_on: its_dark
+      - if:
+          condition:
+            and:
+              - switch.is_on: enable
+              - lambda: "return atoi(id(set_interval).state.c_str()) == 0;"
+              - lambda: "return id(brightness).state > $bright_level;"
+              - switch.is_on: its_dark
+          then:
+            - switch.turn_on: spray
+            - delay: !lambda return (1500 * $dark_mode_sprays);
+            - switch.turn_off: its_dark
+
+switch:
+  - platform: gpio
+    id: spray
+    name: Freshmatic ${room} Spray
+    icon: mdi:spray
+    pin: D2
+    on_turn_on:
+      - light.turn_on:
+          id: led
+          effect: pulser
+      - switch.turn_on: timer
+      - delay: 0.2s
+      - switch.turn_off: spray
+      - lambda: |-
+          id(sprays) += 1;
+
+  - platform: template
+    id: enable
+    name: Freshmatic $room Enable
+    optimistic: true
+    on_turn_on:
+      - switch.turn_on: timer
+
+  - platform: template
+    id: its_dark
+    name: Freshmatic $room is Dark
+    icon: mdi:brightness-4
+    optimistic: true
+
+  - platform: template
+    id: timer
+    optimistic: true
+    on_turn_on:
+      - delay: !lambda return atoi(id(set_interval).state.c_str()) * (60000); # Default 60000
+      - switch.turn_off: timer
+      - if:
+          condition:
+            - switch.is_on: enable
+            - lambda: "return atoi(id(set_interval).state.c_str()) >= 1;"
+          then:
+            - light.turn_on:
+                id: led
+                effect: flashfast
+            - delay: 1.0s
+            - light.turn_off: led
+            - switch.turn_on: spray
+
+light:
+  - platform: monochromatic
+    id: led
+    name: Freshmatic $room LED
+    output: out_led
+    default_transition_length: 0s
+    effects:
+      - pulse:
+          name: pulser
+          transition_length: 0.0s
+          update_interval: 0.25s
+      - pulse:
+          name: flashfast
+          transition_length: 0.0s
+          update_interval: 0.025s
+    on_turn_on:
+      - delay: 3s
+      - light.turn_off: led
+
+output:
+  platform: esp8266_pwm
+  pin:
+    number: D3
+    inverted: true
+  id: out_led
