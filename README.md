@@ -1,7 +1,7 @@
 # Scent-a-Tron Project 2022 Update
 
-## Watch the full tutorial and ESPHome Code Breakdown here: [Scent-a-Tron 2022 Update](https://youtu.be/yEYldUhZJQw)
-
+### Watch the full tutorial and ESPHome Code Breakdown here: [Scent-a-Tron 2022 Update](https://youtu.be/yEYldUhZJQw)
+### Also, check out the Node-Red Tutorial for ["Bathroom Mode" Automation](https://youtu.be/kLE6VnJZBaQ)  
 
 ### Download the ESPHome Code:
 * 1 - Use the '***Code***' button above (_Top Right_)
