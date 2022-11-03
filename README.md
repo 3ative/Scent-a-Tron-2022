@@ -9,6 +9,7 @@
 
 ![Capture](https://user-images.githubusercontent.com/51385971/185537386-6d999aa9-bf7a-4f7c-ab94-ed3ee0bcd6f1.JPG)
 
+___
 #### 💖 Found this useful, want to say '*Thanks*' and support my efforts. *CHEERS*🍺
 | Buy me a Coffee | PATREON |
 |-----------------|---------|
