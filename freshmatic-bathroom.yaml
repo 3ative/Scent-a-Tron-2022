@@ -141,6 +141,7 @@ switch:
   - platform: template
     id: enable
     name: Freshmatic $room Enable
+    icon: mdi:autorenew
     optimistic: true
     on_turn_on:
       - switch.turn_on: timer
