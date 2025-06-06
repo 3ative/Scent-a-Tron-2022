@@ -9,8 +9,9 @@
 
 ![Capture](https://user-images.githubusercontent.com/51385971/185537386-6d999aa9-bf7a-4f7c-ab94-ed3ee0bcd6f1.JPG)
 
-___
-#### 💖 Found this useful, want to say '*Thanks*' and support my efforts. *CHEERS*🍺
+---
+### 🤝 Found this useful, want to say 'Thanks' and support my efforts. CHEERS🍺
 | Buy me a Coffee | PATREON |
 |-----------------|---------|
-| https://www.buymeacoffee.com/3ative | https://www.patreon.com/3ative |
+| [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-donate-yellow.svg?style=flat-square&logo=buy-me-a-coffee)](https://www.buymeacoffee.com/3ative) | [![Patreon](https://img.shields.io/badge/Patreon-support-red.svg?style=flat-square&logo=patreon)](https://www.patreon.com/3ative) |
+---
