@@ -1,31 +1,27 @@
 substitutions:
-  room: bathroom # Room Name. Lowercase only, Used for Device Name and Entities
-  bright_level: "50"
+  bright_level: "31"
   dark_level: "20"
-
-  dark_mode_sprays: "2" # Number of times to spray in Bathroom Mode
-
-  # Set the Interval Timings here (Minutes)
+  dark_mode_sprays: "2"
   interval1: "5"
   interval2: "15"
   interval3: "30"
   interval4: "60"
-
-globals:
-  - id: sprays
-    type: float
-    restore_value: yes
+  interval5: "120"
 
 esphome:
-  name: freshmatic-$room
+  name: freshmatic-bathroom
+  friendly_name: Freshmatic Bathroom
 
 esp8266:
   board: d1_mini
   restore_from_flash: true
 
-wifi:
-  ssid: !secret wifi_ssid
-  password: !secret wifi_password
+<<: !include .e_base.yaml
+
+globals:
+  - id: sprays
+    type: float
+    restore_value: yes
 
 logger:
   logs:
@@ -33,11 +29,6 @@ logger:
     sensor: none
     light: none
     select: none
-api:
-ota:
-  platform: esphome
-web_server:
-  port: 80
 
 binary_sensor:
   - platform: gpio
@@ -55,10 +46,20 @@ binary_sensor:
         - lambda: |-
             id(sprays) = 0;
 
+button:
+  - platform: template
+    name: Reset
+    id: reset_button
+    on_press:
+      - lambda: |-
+          id(sprays) = 0;
+      - lambda: |-
+          global_preferences->sync();
+
 select:
   - platform: template
+    name: Interval
     id: set_interval
-    name: $room Interval
     icon: mdi:timer-outline
     optimistic: true
     restore_value: true
@@ -68,6 +69,7 @@ select:
       - $interval2 Minutes
       - $interval3 Minutes
       - $interval4 Minutes
+      - $interval5 Minutes
     on_value:
       - if:
           condition:
@@ -78,36 +80,35 @@ select:
 
 sensor:
   - platform: template
+    name: Can
     id: can_level
-    name: "Freshmatic $room Can"
     device_class: pressure
     unit_of_measurement: "Can"
     update_interval: 2s
     lambda: |-
-      return ( (2500-id(sprays) )/2500 ) * 100;
+      return ((2500 - id(sprays)) / 2500) * 100;
 
   - platform: adc
+    name: Lux
     id: brightness
-    name: Freshmatic $room Lux
     device_class: illuminance
     unit_of_measurement: lx
     pin: A0
     update_interval: 1s
     filters:
-      - lambda: return 85-(x * 150);
+      - lambda: return 85 - (x * 150);
       - sliding_window_moving_average:
           window_size: 3
           send_every: 3
-
     on_value:
       - if:
           condition:
             for:
-              time: 20min # Waits for this time before resetting 'Dark Mode'. Default 20min
+              time: 20min
               condition:
                 and:
                   - switch.is_on: enable
-                  - lambda: "return atoi(id(set_interval).state.c_str()) == 0;"
+                  - lambda: "return atoi(id(set_interval).current_option()) == 0;"
                   - lambda: "return id(brightness).state < $dark_level;"
                   - switch.is_off: its_dark
           then:
@@ -116,7 +117,7 @@ sensor:
           condition:
             and:
               - switch.is_on: enable
-              - lambda: "return atoi(id(set_interval).state.c_str()) == 0;"
+              - lambda: "return atoi(id(set_interval).current_option()) == 0;"
               - lambda: "return id(brightness).state > $bright_level;"
               - switch.is_on: its_dark
           then:
@@ -126,8 +127,8 @@ sensor:
 
 switch:
   - platform: gpio
+    name: Spray
     id: spray
-    name: Freshmatic ${room} Spray
     icon: mdi:spray
     pin: D2
     on_turn_on:
@@ -141,16 +142,16 @@ switch:
           id(sprays) += 1;
 
   - platform: template
+    name: Enable
     id: enable
-    name: Freshmatic $room Enable
     icon: mdi:autorenew
     optimistic: true
     on_turn_on:
       - switch.turn_on: timer
 
   - platform: template
+    name: is Dark
     id: its_dark
-    name: Freshmatic $room is Dark
     icon: mdi:brightness-4
     optimistic: true
 
@@ -158,12 +159,12 @@ switch:
     id: timer
     optimistic: true
     on_turn_on:
-      - delay: !lambda return atoi(id(set_interval).state.c_str()) * (60000); # Default 60000
+      - delay: !lambda return atoi(id(set_interval).current_option()) * 60000;
       - switch.turn_off: timer
       - if:
           condition:
             - switch.is_on: enable
-            - lambda: "return atoi(id(set_interval).state.c_str()) >= 1;"
+            - lambda: "return atoi(id(set_interval).current_option()) >= 1;"
           then:
             - light.turn_on:
                 id: led
@@ -174,8 +175,8 @@ switch:
 
 light:
   - platform: monochromatic
+    name: LED
     id: led
-    name: Freshmatic $room LED
     output: out_led
     default_transition_length: 0s
     effects:
@@ -192,8 +193,8 @@ light:
       - light.turn_off: led
 
 output:
-  platform: esp8266_pwm
-  pin:
-    number: D3
-    inverted: true
-  id: out_led
+  - platform: esp8266_pwm
+    pin:
+      number: D3
+      inverted: true
+    id: out_led
