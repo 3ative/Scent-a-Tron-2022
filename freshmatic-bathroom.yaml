@@ -117,7 +117,7 @@ sensor:
               condition:
                 and:
                   - switch.is_on: enable
-                  - lambda: "return atoi(id(set_interval).state.c_str()) == 0;"
+                  - lambda: "return atoi(id(set_interval).current_option().c_str()) == 0;"
                   - lambda: "return id(brightness).state < $dark_level;"
                   - switch.is_off: its_dark
           then:
@@ -126,7 +126,7 @@ sensor:
           condition:
             and:
               - switch.is_on: enable
-              - lambda: "return atoi(id(set_interval).state.c_str()) == 0;"
+              - lambda: "return atoi(id(set_interval).current_option().c_str()) == 0;"
               - lambda: "return id(brightness).state > $bright_level;"
               - switch.is_on: its_dark
           then:
@@ -168,12 +168,12 @@ switch:
     id: timer
     optimistic: true
     on_turn_on:
-      - delay: !lambda return atoi(id(set_interval).state.c_str()) * 1000;
+      - delay: !lambda return atoi(id(set_interval).current_option().c_str()) * 1000;
       - switch.turn_off: timer
       - if:
           condition:
             - switch.is_on: enable
-            - lambda: "return atoi(id(set_interval).state.c_str()) >= 1;"
+            - lambda: "return atoi(id(set_interval).current_option().c_str()) >= 1;"
           then:
             - light.turn_on:
                 id: led
