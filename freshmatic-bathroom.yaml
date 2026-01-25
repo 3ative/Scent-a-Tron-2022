@@ -22,6 +22,7 @@ esp8266:
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
+  min_auth_mode: WPA2
 
 globals:
   - id: sprays
@@ -116,7 +117,7 @@ sensor:
               condition:
                 and:
                   - switch.is_on: enable
-                  - lambda: "return atoi(id(set_interval).current_option()) == 0;"
+                  - lambda: "return atoi(id(set_interval).state.c_str()) == 0;"
                   - lambda: "return id(brightness).state < $dark_level;"
                   - switch.is_off: its_dark
           then:
@@ -125,7 +126,7 @@ sensor:
           condition:
             and:
               - switch.is_on: enable
-              - lambda: "return atoi(id(set_interval).current_option()) == 0;"
+              - lambda: "return atoi(id(set_interval).state.c_str()) == 0;"
               - lambda: "return id(brightness).state > $bright_level;"
               - switch.is_on: its_dark
           then:
@@ -167,12 +168,12 @@ switch:
     id: timer
     optimistic: true
     on_turn_on:
-      - delay: !lambda return atoi(id(set_interval).current_option()) * 1000; # Waits for this time before resetting 'Dark Mode'. Default 20min
+      - delay: !lambda return atoi(id(set_interval).state.c_str()) * 1000;
       - switch.turn_off: timer
       - if:
           condition:
             - switch.is_on: enable
-            - lambda: "return atoi(id(set_interval).current_option()) >= 1;"
+            - lambda: "return atoi(id(set_interval).state.c_str()) >= 1;"
           then:
             - light.turn_on:
                 id: led
